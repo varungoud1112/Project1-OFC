@@ -120,10 +120,3 @@ Final output includes:
   - 3rd floor raw punch logs (`Raw Punch Records`)
 
 ---
-
-## 📌 To-Do (Optional Improvements)
-
-- Add user authentication and role separation
-- UI styling with Bootstrap or Tailwind CSS
-- Email reports on completion
-- File upload validations and templates
