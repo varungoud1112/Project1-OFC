@@ -4,6 +4,12 @@ import pandas as pd
 import os
 import re
 from datetime import datetime, timedelta
+from openpyxl import load_workbook
+from openpyxl.styles import PatternFill
+from openpyxl.styles.borders import Border, Side
+from openpyxl.styles.differential import DifferentialStyle
+from openpyxl.formatting.rule import FormulaRule
+from openpyxl.utils import get_column_letter
 
 app = Flask(__name__)
 
@@ -180,71 +186,136 @@ os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 # Function to convert time string to total seconds
 def time_to_seconds(time_str):
     try:
-        h, m, s = map(int, time_str.split(":"))
+        h, m, s = map(int, str(time_str).split(":"))
         return h * 3600 + m * 60 + s
     except:
-        return 0  # Return 0 if the value is not in time format
+        return 0
 
-# Function to convert total seconds back to HH:MM:SS format
 def seconds_to_time(seconds):
     h = seconds // 3600
     m = (seconds % 3600) // 60
     s = seconds % 60
     return f"{h:02}:{m:02}:{s:02}"
 
-@app.route("/merged", methods=["GET", "POST"])
-def merged():
-    if request.method == "POST":
-        # Get uploaded files
-        file_2nd = request.files.get("file_2nd")
-        file_3rd = request.files.get("file_3rd")
+# Dummy placeholders (replace with real processing functions if needed)
+def process1_2nd_floor(file_path):
+    return file_path  # return recalculated file path
 
-        if not file_2nd or not file_3rd:
-            return "Please upload both Excel files."
+def process1_3rd_floor(file_path):
+    return file_path  # return recalculated file path
 
-        # Save uploaded files
-        file_2nd_path = os.path.join(UPLOAD_FOLDER, file_2nd.filename)
-        file_3rd_path = os.path.join(UPLOAD_FOLDER, file_3rd.filename)
-        file_2nd.save(file_2nd_path)
-        file_3rd.save(file_3rd_path)
 
-        # Load the Excel files
-        df_2nd = pd.read_excel(file_2nd_path)
-        df_3rd = pd.read_excel(file_3rd_path)
+# ---------- Apply Remark + Conditional Formatting ----------
+def apply_remark_coloring(excel_path):
+    wb = load_workbook(excel_path)
+    ws = wb.active
 
-        # Process the data
-        df_2nd = df_2nd.rename(columns={"Total Time Spent": "Total Time Spent 2nd Floor"})
-        df_3rd = df_3rd.rename(columns={"Total Time Spent": "Total Time Spent 3rd Floor"})
+    headers = [cell.value for cell in ws[1]]
+    time_col_idx = headers.index("Total Time Spent (Both Floors)") + 1
+    time_col_letter = get_column_letter(time_col_idx)
 
-        df_2nd = df_2nd[["Date", "Employee Code", "Employee Name", "Total Time Spent 2nd Floor"]]
-        df_3rd = df_3rd[["Date", "Employee Code", "Employee Name", "Total Time Spent 3rd Floor"]]
+    # Add "Remark" column header
+    remark_col_idx = time_col_idx + 1
+    remark_col_letter = get_column_letter(remark_col_idx)
+    ws.cell(row=1, column=remark_col_idx).value = "Remark"
 
-        df_2nd["Date"] = pd.to_datetime(df_2nd["Date"], errors="coerce")
-        df_3rd["Date"] = pd.to_datetime(df_3rd["Date"], errors="coerce")
+    # Add formula in each row
+    for row in range(2, ws.max_row + 1):
+        time_cell = f"{time_col_letter}{row}"
+        remark_cell = f"{remark_col_letter}{row}"
+        ws[remark_cell] = f'=IF({time_cell}="00:00:00", "00:00:00", TEXT(ABS(TIME(8,0,0) - TIMEVALUE({time_cell})), "hh:mm:ss"))'
 
-        df_merged = pd.merge(
-            df_2nd, df_3rd, on=["Date", "Employee Code"], how="outer", suffixes=("_2nd", "_3rd")
-        )
-        df_merged["Employee Name"] = df_merged["Employee Name_2nd"].combine_first(df_merged["Employee Name_3rd"])
+    # Define fills
+    green_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+    red_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+    gray_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
 
-        df_merged = df_merged[
-            ["Date", "Employee Code", "Employee Name", "Total Time Spent 2nd Floor", "Total Time Spent 3rd Floor"]
-        ]
-        df_merged.fillna({"Total Time Spent 2nd Floor": "00:00:00", "Total Time Spent 3rd Floor": "00:00:00"}, inplace=True)
-        df_merged["Date"] = df_merged["Date"].dt.strftime("%Y-%m-%d")
-        df_merged["Seconds_2nd"] = df_merged["Total Time Spent 2nd Floor"].apply(time_to_seconds)
-        df_merged["Seconds_3rd"] = df_merged["Total Time Spent 3rd Floor"].apply(time_to_seconds)
+    # Conditional formatting on the Remark column
+    ws.conditional_formatting.add(
+        f"{remark_col_letter}2:{remark_col_letter}{ws.max_row}",
+        FormulaRule(formula=[f'AND(TIMEVALUE({time_col_letter}2)>=TIME(8,0,0), {time_col_letter}2<>"00:00:00")'], fill=green_fill)
+    )
+    ws.conditional_formatting.add(
+        f"{remark_col_letter}2:{remark_col_letter}{ws.max_row}",
+        FormulaRule(formula=[f'AND(TIMEVALUE({time_col_letter}2)<TIME(8,0,0), {time_col_letter}2<>"00:00:00")'], fill=red_fill)
+    )
+    ws.conditional_formatting.add(
+        f"{remark_col_letter}2:{remark_col_letter}{ws.max_row}",
+        FormulaRule(formula=[f'{time_col_letter}2="00:00:00"'], fill=gray_fill)
+    )
 
-        df_merged["Total Time Spent (Both Floors)"] = df_merged["Seconds_2nd"] + df_merged["Seconds_3rd"]
-        df_merged["Total Time Spent (Both Floors)"] = df_merged["Total Time Spent (Both Floors)"].apply(seconds_to_time)
-        df_merged.drop(columns=["Seconds_2nd", "Seconds_3rd"], inplace=True)
+    wb.save(excel_path)
 
-        output_file = os.path.join(OUTPUT_FOLDER, f"Merged_Floor_{current_date}.xlsx")
-        df_merged.to_excel(output_file, index=False)
 
-        return send_file(output_file, as_attachment=True)
-
+@app.route("/2-33", methods=["GET"])
+def indexs():
     return render_template("merged.html")
+
+
+@app.route("/merged", methods=["POST"])
+def merged():
+    file_2nd = request.files.get("file_2nd")
+    file_3rd = request.files.get("file_3rd")
+
+    if not file_2nd or not file_3rd:
+        return "Please upload both Excel files."
+
+    # Save uploads
+    file_2nd_path = os.path.join(UPLOAD_FOLDER, file_2nd.filename)
+    file_3rd_path = os.path.join(UPLOAD_FOLDER, file_3rd.filename)
+    file_2nd.save(file_2nd_path)
+    file_3rd.save(file_3rd_path)
+
+    # 🔥 Recalculate totals
+    recalculated_2nd = process1_2nd_floor(file_2nd_path)
+    recalculated_3rd = process1_2nd_floor(file_3rd_path)
+
+    df_2nd = pd.read_excel(recalculated_2nd)
+    df_3rd = pd.read_excel(recalculated_3rd)
+
+    # Rename to avoid clashes
+    df_2nd = df_2nd.rename(columns={"Total Time Spent": "Total Time Spent 2nd Floor"})
+    df_3rd = df_3rd.rename(columns={"Total Time Spent": "Total Time Spent 3rd Floor"})
+
+    # Keep required columns
+    df_2nd = df_2nd[[c for c in ["Date", "Employee Code", "Employee Name", "Total Time Spent 2nd Floor"] if c in df_2nd.columns]]
+    df_3rd = df_3rd[[c for c in ["Date", "Employee Code", "Employee Name", "Total Time Spent 3rd Floor"] if c in df_3rd.columns]]
+
+    # Convert date
+    df_2nd["Date"] = pd.to_datetime(df_2nd["Date"], errors="coerce")
+    df_3rd["Date"] = pd.to_datetime(df_3rd["Date"], errors="coerce")
+
+    # Merge
+    df_merged = pd.merge(df_2nd, df_3rd, on=["Date", "Employee Code"], how="outer", suffixes=("_2nd", "_3rd"))
+
+    # Pick Employee Name
+    if "Employee Name_2nd" in df_merged.columns and "Employee Name_3rd" in df_merged.columns:
+        df_merged["Employee Name"] = df_merged["Employee Name_2nd"].combine_first(df_merged["Employee Name_3rd"])
+    elif "Employee Name_2nd" in df_merged.columns:
+        df_merged["Employee Name"] = df_merged["Employee Name_2nd"]
+    elif "Employee Name_3rd" in df_merged.columns:
+        df_merged["Employee Name"] = df_merged["Employee Name_3rd"]
+
+    # Final column order
+    df_merged = df_merged[["Date", "Employee Code", "Employee Name", "Total Time Spent 2nd Floor", "Total Time Spent 3rd Floor"]]
+    df_merged.fillna({"Total Time Spent 2nd Floor": "00:00:00", "Total Time Spent 3rd Floor": "00:00:00"}, inplace=True)
+    df_merged["Date"] = df_merged["Date"].dt.strftime("%Y-%m-%d")
+
+    # Sum both floors
+    df_merged["Seconds_2nd"] = df_merged["Total Time Spent 2nd Floor"].apply(time_to_seconds)
+    df_merged["Seconds_3rd"] = df_merged["Total Time Spent 3rd Floor"].apply(time_to_seconds)
+    df_merged["Total Time Spent (Both Floors)"] = (df_merged["Seconds_2nd"] + df_merged["Seconds_3rd"]).apply(seconds_to_time)
+
+    df_merged.drop(columns=["Seconds_2nd", "Seconds_3rd"], inplace=True)
+
+    # Save
+    output_file = os.path.join(OUTPUT_FOLDER, f"Merged_Floor_{current_date}.xlsx")
+    df_merged.to_excel(output_file, index=False)
+
+    # Apply formatting
+    apply_remark_coloring(output_file)
+
+    return send_file(output_file, as_attachment=True)
 
 ##########################################################
 app.secret_key = "your_secret_key"  # Replace with a secure key
@@ -255,8 +326,8 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 # Admin credentials
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD_HASH = generate_password_hash("admin123")  # Replace with a secure password
+ADMIN_USERNAME = "varun"
+ADMIN_PASSWORD_HASH = generate_password_hash("varun123")  # Replace with a secure password
 
 # Authentication decorator
 def login_required(f):
@@ -353,11 +424,9 @@ def index():
     return render_template(".html", total_time_spent=total_time_spent)
 ##################################################################################################
 
-@app.route('/', methods=['GET', 'POST'])
-def hello():
-    return render_template('hello.html')
 
-@app.route('/welcome', methods=['GET', 'POST'])
+
+@app.route('/', methods=['GET', 'POST'])
 def welcome():
     return render_template('welcome.html')
 
