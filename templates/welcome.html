@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Attendance Report Generator</title>
+  <link rel="icon" href="" type="image/icon type" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+      background: url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d') no-repeat center center/cover;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(4px);
+      z-index: 0;
+    }
+
+    .title {
+      font-size: 48px;
+      font-weight: 700;
+      color: white;
+      text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.5);
+      z-index: 1;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      color: #eee;
+      margin-top: 10px;
+      z-index: 1;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 30px;
+      justify-content: center;
+      margin-top: 40px;
+      z-index: 1;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(16px);
+      border-radius: 20px;
+      padding: 30px 20px;
+      width: 280px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      color: white;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    .card h2 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #ffffff;
+    }
+
+    .button {
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: bold;
+      background: linear-gradient(to right, #0078d4, #005bb5);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: background 0.3s ease, transform 0.2s ease;
+    }
+
+    .button:hover {
+      background: linear-gradient(to right, #005bb5, #003f7f);
+      transform: scale(1.05);
+    }
+
+    .footer {
+      position: absolute;
+      bottom: 10px;
+      width: 100%;
+      text-align: center;
+      font-size: 16px;
+      color: #ffffff;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px 0;
+      border-top: 2px solid #0078d4;
+      z-index: 1;
+    }
+
+    .footer a {
+      color: #0078d4;
+      text-decoration: none;
+      font-weight: bold;
+      transition: color 0.3s ease;
+    }
+
+    .footer a:hover {
+      color: #00aaff;
+    }
+
+    @media screen and (max-width: 600px) {
+      .title {
+        font-size: 32px;
+      }
+
+      .card {
+        width: 90%;
+      }
+
+      .button {
+        font-size: 14px;
+        padding: 10px 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay"></div>
+
+  <div class="title">Simpliaxis Attendance Generator 📈</div>
+  <div class="subtitle">Generate & Merge Floor-wise Reports Instantly</div>
+
+  <div class="container">
+    <div class="card">
+      <h2>Attendance - 2nd + 3rd Floor 🚀</h2>
+      <a href="/2-3" class="button">Click Me 😃</a>
+    </div>
+    <div class="card">
+      <h2>Attendance Merging 🧩</h2>
+      <a href="/2-33" class="button">Click Me 😃</a>
+    </div>
+  </div>
+
+  <div class="footer">
+    &copy; 2025 Attendance System | V2 &nbsp;|&nbsp;
+  </div>
+
+  <script disable-devtool-auto src='https://cdn.jsdelivr.net/npm/disable-devtool'></script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Portal</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-image: url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 15px;
+      padding: 40px 30px;
+      width: 90%;
+      max-width: 500px;
+      color: #fff;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    h2 {
+      font-size: 28px;
+      margin-bottom: 15px;
+      color: #fff;
+    }
+
+    .logout-link {
+      display: inline-block;
+      margin-bottom: 30px;
+      text-decoration: none;
+      background: #007bff;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: bold;
+      transition: background 0.3s ease;
+    }
+
+    .logout-link:hover {
+      background: #0056b3;
+    }
+
+    h3 {
+      font-size: 20px;
+      margin-bottom: 20px;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    li {
+      background: rgba(255, 255, 255, 0.25);
+      margin: 10px 0;
+      padding: 15px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    a.file-link {
+      color: #00bfff;
+      font-weight: bold;
+      text-decoration: none;
+      word-break: break-all;
+    }
+
+    a.file-link:hover {
+      text-decoration: underline;
+    }
+
+    .delete-btn {
+      background: #e74c3c;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .delete-btn:hover {
+      background: #c0392b;
+    }
+
+    .note {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #ffdada;
+    }
+
+    @media (max-width: 480px) {
+      li {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .delete-btn {
+        margin-top: 10px;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>Admin Portal</h2>
+    <a href="{{ url_for('admin_logout') }}" class="logout-link">Logout</a>
+
+    <h3>Available Files</h3>
+    <ul>
+      {% for file in files %}
+      <li>
+        <a class="file-link" href="{{ url_for('admin_download', filename=file) }}">{{ file }}</a>
+        <form action="{{ url_for('admin_delete', filename=file) }}" method="POST" style="margin: 0;">
+          <button type="submit" class="delete-btn" onclick="return confirm('Are you sure you want to delete this file?');">Delete</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+
+    <div class="note">Note: Download or delete the processed files listed above.</div>
+  </div>
+
+  <script disable-devtool-auto src="https://cdn.jsdelivr.net/npm/disable-devtool"></script>
+</body>
+</html>
